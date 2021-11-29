@@ -23,7 +23,7 @@ task void gemm_ispc_task(
 			foreach (kk = 0 ... k) {
 				partial_inner_product += A[i * m + kk] * B[kk * n + j];
 			}
-			C[i * m + j] = alpha * inner_prod + beta * reduce_add(partial_inner_product);
+			C[i * m + j] = alpha * reduce_add(partial_inner_product) + beta * C[i * m + j];
 		}
 	}
 }
