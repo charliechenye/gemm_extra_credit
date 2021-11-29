@@ -16,13 +16,14 @@ task void gemm_ispc_task(
 	uniform int j_thread_end = (thread_j < num_threads_j - 1 ? j_thread_start + (j_block_end - j_block_start) / num_threads_j : j_block_end);
 
 	// SIMD with 4 ALUS
-	foreach (i = i_thread_start ... i_thread_end) {
+	for (uniform int i = i_thread_start; i < i_thread_end; i ++) {
 		for (uniform int j = j_thread_start; j < j_thread_end; j ++) {
 			double inner_prod = 0.0;
-			for (uniform int kk = 0; kk < k; kk ++) {
-				inner_prod += A[i * m + kk] * B[kk * n + j];
+			double partial_inner_product = 0.0;
+			foreach (kk = 0 ... k) {
+				partial_inner_product += A[i * m + kk] * B[kk * n + j];
 			}
-			C[i * m + j] = alpha * inner_prod + beta * C[i * m + j];
+			C[i * m + j] = alpha * inner_prod + beta * reduce_add(partial_inner_product);
 		}
 	}
 }
