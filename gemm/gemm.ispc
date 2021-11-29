@@ -7,11 +7,13 @@ task void gemm_ispc_task(
 {
 	// YOUR IMPLEMENTATION HERE
 
-	// 1 block is splited into 8 parts executed by 8 threads (2 sets of 4 threads)
-	uniform int i_thread_start = (taskIndex < 4 ? i_block_start : (i_block_start + i_block_end) / 2);
-	uniform int i_thread_end = (taskIndex < 4 ? (i_block_start + i_block_end) / 2 : i_block_end);
-	uniform int j_thread_start = j_block_start + (j_block_end - j_block_start) / num_threads_i * (taskIndex % num_threads_i); // starting col of each part
-	uniform int j_thread_end = ((taskIndex + 1) % num_threads_i == 0 ? j_block_end : j_thread_start + (j_block_end - j_block_start) / num_threads_i); // inal col of each part
+	uniform const int thread_i = taskIndex / num_threads_j;
+	uniform const int thread_j = taskIndex % num_threads_j;
+	// 1 block is splited into num_threads_i x num_threads_j parts
+	uniform int i_thread_start = i_block_start + (i_block_end - i_block_start) / num_threads_i * thread_i;
+	uniform int i_thread_end = (thread_i < num_threads_i - 1 ? i_thread_start + (i_block_end - i_block_start) / num_threads_i * thread_i : i_block_end);
+	uniform int j_thread_start = j_block_start + (j_block_end - j_block_start) / num_threads_i * thread_j;
+	uniform int j_thread_end = (thread_j < num_threads_j - 1 ? j_block_end : j_thread_start + (j_block_end - j_block_start) / num_threads_i);
 
 	// SIMD with 4 ALUS
 	foreach (i = i_thread_start ... i_thread_end) {
