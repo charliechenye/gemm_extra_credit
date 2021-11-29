@@ -30,9 +30,8 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 	uniform const int b_size = 64;
 	uniform const int i_interleaving = 64;
 	uniform int nBlock = m / b_size;
-	for (uniform int iBlock = 0; iBlock < nBlock; iBlock++){
+	for (uniform int i_block_start = 0; i_block_start < m; i_block_start += b_size){
 		// Save matrix in L3 cache
-		uniform int i_block_start = iBlock * b_size; // starting element in row of each block
 		uniform int i_block_end = i_block_start + b_size; // final element in row of each block
 		for(uniform int i = i_block_start; i < i_block_end; i++){ 
 			foreach (kk = 0 ... k){ 
