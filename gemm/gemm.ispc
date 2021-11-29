@@ -1,6 +1,8 @@
-task void gemm_ispc_task( uniform int m, uniform int n, uniform int k,
+task void gemm_ispc_task(
+	uniform const int m, uniform const int n, uniform const int k,
 	uniform double A[], uniform double B[], uniform double C[], uniform double alpha, uniform double beta, 
-	uniform int i_block_start, uniform int i_block_end, uniform int j_block_start, uniform int j_block_end) 
+	uniform const int i_block_start, uniform const int i_block_end, 
+	uniform const int j_block_start, uniform const int j_block_end) 
 {
 	// YOUR IMPLEMENTATION HERE
 
