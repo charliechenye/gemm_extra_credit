@@ -24,21 +24,24 @@ task void gemm_ispc_task( uniform int m, uniform int n, uniform int k,
 
 export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 	 uniform double A[], uniform double B[], uniform double C[], uniform double alpha, 
-	 uniform double beta) {
+	 uniform double beta) 
+{
 	// YOUR IMPLEMENTATION HERE
+	uniform const int b_size = 64;
+	uniform const int i_interleaving = 64;
 	uniform int nBlock = m*m / 1000000 * 3 + 1;
-	for(uniform int iBlock = 0; iBlock < nBlock; iBlock++){
+	for (uniform int iBlock = 0; iBlock < nBlock; iBlock++){
 		// Save matrix in L3 cache
-		uniform int iBlockStart = iBlock * (int) (m / nBlock); // starting element in row of each block
-		uniform int iBlockEnd = (iBlock < nBlock - 1? iBlockStart + (int) (m / nBlock) : m); // final element in row of each block
+		uniform int iBlockStart = iBlock * b_size; // starting element in row of each block
+		uniform int iBlockEnd = (iBlock < nBlock - 1? iBlockStart + b_size : m); // final element in row of each block
 		for(uniform int i = iBlockStart; i < iBlockEnd; i++){ 
 			foreach (kk = 0 ... k){ 
 				prefetch_l3(&A[i*k+kk]);
 			}
 		}
 		for(uniform int jBlock = 0; jBlock < nBlock; jBlock++){
-			uniform int jBlockStart = jBlock * (int) (m / nBlock); // starting element in column of each block
-			uniform int jBlockEnd = (jBlock < nBlock - 1? jBlockStart + (int) (m / nBlock) : m); // end element in column of each block
+			uniform int jBlockStart = jBlock * b_size; // starting element in column of each block
+			uniform int jBlockEnd = (jBlock < nBlock - 1? jBlockStart + b_size : m); // end element in column of each block
 
 			for (uniform int kk = 0; kk < k; kk++){ 
 				foreach(j = jBlockStart ... jBlockEnd){
