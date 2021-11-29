@@ -18,7 +18,7 @@ task void gemm_ispc_task( uniform int m, uniform int n, uniform int k,
 			for (uniform int kk = 0; kk < k; kk ++) {
 				inner_prod += A[i * k + kk] * B[kk * n + j];
 			}
-			C[i * n + j] = alpha * inner_prod + beta * C[i * n + j];	
+			C[i * n + j] += alpha * inner_prod;	
 		}
 }
 
@@ -26,6 +26,11 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 	 uniform double A[], uniform double B[], uniform double C[], uniform double alpha, 
 	 uniform double beta) {
 	// YOUR IMPLEMENTATION HERE
+
+	// initialization
+	for (uniform int i = 0; i < m; i ++)
+		foreach (kk = 0 ... k) 
+			C[i * m + kk] = beta * C[i * m + kk];
 	uniform int b_size = 64;
 	uniform int i_interleaving = 64;
 	for (uniform int i_offset = 0; i_offset < m; i_offset += i_interleaving) {
