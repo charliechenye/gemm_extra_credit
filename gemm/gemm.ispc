@@ -7,17 +7,17 @@ task void gemm_ispc_task( uniform int m, uniform int n, uniform int k,
 	// 1 block is splited into 8 parts executed by 8 threads (2 sets of 4 threads)
 	uniform int i_thread_start = (taskIndex < 4 ? i_block_start : (i_block_start + i_block_end) / 2);
 	uniform int i_thread_end = (taskIndex < 4 ? (i_block_start + i_block_end) / 2 : i_block_end);
-	uniform int jStart = j_block_start + (int)((j_block_end - j_block_start)/4) * (taskIndex % 4); // starting col of each part
-	uniform int jEnd = (taskIndex % 4 == 3? j_block_end : jStart + (int)((j_block_end - j_block_start)/4)); // final col of each part
+	uniform int j_thread_start = j_block_start + (j_block_end - j_block_start) / 4 * (taskIndex % 4); // starting col of each part
+	uniform int j_thread_end = (taskIndex % 4 == 3 ? j_block_end : j_thread_start + (j_block_end - j_block_start) / 4); // inal col of each part
 
 	// SIMD with 4 ALUS
-	foreach (i = i_thread_start ... i_thread_end){
-		for(uniform int j=jStart; j<jEnd; j++){
-			double inner_prod = 0;
-			for(uniform int kk=0; kk<k; kk++){
-				inner_prod += A[i*k+kk] * B[kk*n+j];
+	foreach (i = i_thread_start ... i_thread_end) {
+		for (uniform int j = j_thread_start; j < j_thread_end; j ++) {
+			double inner_prod = 0.0;
+			for (uniform int kk = 0; kk < k; kk ++) {
+				inner_prod += A[i * k + kk] * B[kk * n + j];
 			}
-			C[i*n+j] = alpha * inner_prod + beta * C[i*n+j];
+			C[i * n + j] = alpha * inner_prod + beta * C[i * n + j];
 		}
 	}
 }
