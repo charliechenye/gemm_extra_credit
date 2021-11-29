@@ -18,7 +18,6 @@ task void gemm_ispc_task(
 	// SIMD with 4 ALUS
 	for (uniform int i = i_thread_start; i < i_thread_end; i ++) {
 		for (uniform int j = j_thread_start; j < j_thread_end; j ++) {
-			double inner_prod = 0.0;
 			double partial_inner_product = 0.0;
 			foreach (kk = 0 ... k) {
 				partial_inner_product += A[i * m + kk] * B[kk * n + j];
