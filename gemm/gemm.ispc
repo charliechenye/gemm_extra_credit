@@ -45,7 +45,7 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 	uniform const int num_threads = 8;
 
 	for (uniform int i_start = 0; i_start < m; i_start += num_threads)
-		launch[num_threads] task_initialize_C(m, n, k, C, beta, i_start)
+		launch[num_threads] task_initialize_C(m, n, k, C, beta, i_start);
 	uniform int b_size = 64;
 	uniform int i_interleaving = 64;
 	for (uniform int i_offset = 0; i_offset < m; i_offset += i_interleaving) {
