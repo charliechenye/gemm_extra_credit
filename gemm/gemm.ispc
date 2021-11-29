@@ -38,14 +38,22 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 	uniform const int i_interleaving = 64;
 	for (uniform int i_block_start = 0; i_block_start < m; i_block_start += i_interleaving) {
 		// Save matrix in L3 cache
-		uniform int i_block_end = (i_block_start + i_interleaving < m ? i_block_start + i_interleaving : m);
-				
+		uniform int i_block_end = (i_block_start + i_interleaving < m ? i_block_start + i_interleaving : m); // final element in row of each block
+		for (uniform int i = i_block_start; i < i_block_end; i++){ 
+			foreach (kk = 0 ... k){ 
+				prefetch_l3(&A[i*k+kk]);
+			}
+		}
 		for (uniform int j_block_start = 0; j_block_start < n; j_block_start += b_size) {
 			uniform int j_block_end = (j_block_start + b_size < n? j_block_start + b_size : n);
 
-			launch[num_threads_i * num_threads_j] gemm_ispc_task(num_threads_i, num_threads_j, 
-																m, n, k, A, B, C, alpha, beta, 
-																i_block_start, i_block_end, j_block_start, j_block_end);
+			for (uniform int i = i_block_start; i < i_block_end; i++){ 
+				foreach(j = j_block_start ... j_block_end){ 
+					prefetch_l3(&C[i*m+j]);
+				}
+			}
+
+			launch[8] gemm_ispc_task(m, n, k, A, B, C, alpha, beta, i_block_start, i_block_end, j_block_start, j_block_end);
 		}
 	}
 }
