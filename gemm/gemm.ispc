@@ -53,7 +53,9 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 				}
 			}
 
-			launch[8] gemm_ispc_task(m, n, k, A, B, C, alpha, beta, i_block_start, i_block_end, j_block_start, j_block_end);
+			launch[num_threads_i * num_threads_j] gemm_ispc_task(num_threads_i, num_threads_j,
+																m, n, k, A, B, C, alpha, beta, 
+																i_block_start, i_block_end, j_block_start, j_block_end);
 		}
 	}
 }
