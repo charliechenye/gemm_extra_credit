@@ -32,8 +32,8 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 	 uniform double beta) 
 {
 	// YOUR IMPLEMENTATION HERE
-	uniform const int num_threads_i = 4;
-	uniform const int num_threads_j = 2;
+	uniform const int num_threads_i = 2;
+	uniform const int num_threads_j = 4;
 	uniform const int b_size = 64;
 	uniform const int i_interleaving = 64;
 	for (uniform int i_block_start = 0; i_block_start < m; i_block_start += i_interleaving) {
