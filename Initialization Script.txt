@@ -1,0 +1,10 @@
+# Go to folder
+cd ~/cs149/gemm_extra_credit/
+
+# Set up MKL
+export MKLROOT=${HOME}/intel/oneapi/mkl/latest/
+echo $MKLROOT
+
+# Set up ISPC
+export PATH=$PATH:${HOME}/ispc/ispc-v1.16.1-linux/bin/
+echo "${PATH//:/$'\n'}"
