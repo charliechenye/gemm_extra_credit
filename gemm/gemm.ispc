@@ -32,8 +32,7 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 	uniform int nBlock = m / b_size;
 	for (uniform int i_block_start = 0; i_block_start < m; i_block_start += b_size){
 		// Save matrix in L3 cache
-		uniform int i_block_end = i_block_start + b_size; // final element in row of each block
-		for(uniform int i = i_block_start; i < i_block_end; i++){ 
+		for(uniform int i = i_block_start; i < i_block_start + b_size; i++){ 
 			foreach (kk = 0 ... k){ 
 				prefetch_l3(&A[i*k+kk]);
 			}
@@ -48,13 +47,13 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 				}
 			}
 
-			for (uniform int i = i_block_start; i < i_block_end; i++){ 
+			for (uniform int i = i_block_start; i < i_block_start + b_size; i++){ 
 				foreach(j = jBlockStart ... jBlockEnd){ 
 					prefetch_l3(&C[i*m+j]);
 				}
 			}
 
-			launch[8] gemm_ispc_task(m, n, k, A, B, C, alpha, beta, i_block_start, i_block_end, jBlockStart, jBlockEnd);
+			launch[8] gemm_ispc_task(m, n, k, A, B, C, alpha, beta, i_block_start, i_block_start + b_size, jBlockStart, jBlockEnd);
 		}
 	}
 }
