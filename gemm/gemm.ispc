@@ -10,8 +10,8 @@ task void gemm_ispc_task(
 	// 1 block is splited into 8 parts executed by 8 threads (2 sets of 4 threads)
 	uniform int i_thread_start = (taskIndex < 4 ? i_block_start : (i_block_start + i_block_end) / 2);
 	uniform int i_thread_end = (taskIndex < 4 ? (i_block_start + i_block_end) / 2 : i_block_end);
-	uniform int j_thread_start = j_block_start + (j_block_end - j_block_start) / 4 * (taskIndex % 4); // starting col of each part
-	uniform int j_thread_end = (taskIndex % 4 == 3 ? j_block_end : j_thread_start + (j_block_end - j_block_start) / 4); // inal col of each part
+	uniform int j_thread_start = j_block_start + (j_block_end - j_block_start) / num_threads_i * (taskIndex % num_threads_i); // starting col of each part
+	uniform int j_thread_end = ((taskIndex + 1) % num_threads_i == 0 ? j_block_end : j_thread_start + (j_block_end - j_block_start) / num_threads_i); // inal col of each part
 
 	// SIMD with 4 ALUS
 	foreach (i = i_thread_start ... i_thread_end) {
