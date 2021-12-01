@@ -1,9 +1,7 @@
 task void gemm_ispc_task(
 	uniform const int num_threads_per_row, uniform const int col_per_thread,
 	uniform const int m, uniform const int n, uniform const int k,
-	uniform double A[], uniform double B[], uniform double C[], uniform double alpha, uniform double beta, 
-	uniform const int i_block_start, uniform const int i_block_end, 
-	uniform const int j_block_start, uniform const int j_block_end) 
+	uniform double A[], uniform double B[], uniform double C[], uniform double alpha, uniform double beta) 
 {
 	// YOUR IMPLEMENTATION HERE
 	
