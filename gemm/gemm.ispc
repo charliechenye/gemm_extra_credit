@@ -41,22 +41,23 @@ task void blocking_task(
 	uniform const int m, uniform const int n, uniform const int k,
 	uniform double A[], uniform double B[], uniform double C[], uniform double alpha, uniform double beta) 
 {
-	uniform const int l_offset = taskIndex / j_count * block_size;
-	uniform const int j_offset = taskIndex % j_count * block_size;
+	uniform const int l_offset = taskIndex / (j_count * m) * block_size;
+	uniform const int j_offset = (taskIndex % (j_count * m)) / m * block_size;
+	uniform const int i = taskIndex % m;
 	uniform const int j_max = (j_offset + block_size < k ? j_offset + block_size : k);
 	uniform const int l_max = (l_offset + block_size < n ? l_offset + block_size : n);
-	print("Taks ID: %, l range: % to %, j range: % to %\n", taskIndex, l_offset, l_max, j_offset, j_max);
+	print("Taks ID: %, m: %, l range: % to %, j range: % to %\n", taskIndex, m, l_offset, l_max, j_offset, j_max);
 	
-	foreach (i = 0 ... m) {
-		for (int j = j_offset; j < j_max; j ++) {
-			double inner_product = 0.0;
-			for (int l = l_offset; l < l_max; l ++) {
-			    inner_product += A[i * m + l] * B[l * n + j];
-			}
-			print("Updated %", i * m + j);
-			C[i * m + j] += alpha * inner_product;
+
+	foreach (j = j_offset ... j_max) {
+		double inner_product = 0.0;
+		for (uniform int l = l_offset; l < l_max; l ++) {
+			inner_product += A[i * m + l] * B[l * n + j];
 		}
+		% print("Updated %", i * m + j);
+		C[i * m + j] += alpha * inner_product;
 	}
+
 }
 
 export void gemm_ispc(uniform int m, uniform int n, uniform int k,
@@ -76,5 +77,5 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 
 
 	// each thread takes a block
-	launch[l_count * j_count] blocking_task(b_size, l_count, j_count, m, n, k, A, B, C, alpha, beta);
+	launch[l_count * j_count * m] blocking_task(b_size, l_count, j_count, m, n, k, A, B, C, alpha, beta);
 }
