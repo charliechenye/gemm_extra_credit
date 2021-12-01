@@ -9,7 +9,7 @@ task void gemm_ispc_task(
 	// num_threads to process C[i_thread, :] 1 row in C
 	uniform const int thread_j = taskIndex % num_threads_per_row;
 	uniform int i = m / num_threads_per_row;
-	uniform int j_thread_start = col_per_thread * (taskIndex % num_threads);
+	uniform int j_thread_start = col_per_thread * (taskIndex % num_threads_per_row);
 	uniform int j_thread_end = (thread_j < num_threads_per_row - 1 ? j_thread_start + col_per_thread : k);
 
 	// SIMD with 4 ALUS
