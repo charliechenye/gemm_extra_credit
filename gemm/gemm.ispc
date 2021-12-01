@@ -19,7 +19,7 @@ task void gemm_ispc_task(
 	foreach (i = i_thread_start ... i_thread_end) {
 		for (uniform int j = j_thread_start; j < j_thread_end; j ++) {
 			double inner_product = 0.0;
-			for (uniform int kk = 0; kk < k; kk ++) {
+			for (uniform int kk = 0; kk < n; kk ++) {
 				inner_product += A[i * m + kk] * B[kk * n + j];
 			}
 			C[i * m + j] = alpha * inner_product + beta * C[i * m + j];
@@ -31,11 +31,14 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 	 uniform double A[], uniform double B[], uniform double C[], uniform double alpha, 
 	 uniform double beta) 
 {
-	// YOUR IMPLEMENTATION HERE
+    // YOUR IMPLEMENTATION HERE
+    // A: m x n takes 1 x b_size
+    // B: n x k takes b_size x b_size
+    // C: m x k yields 1 x b_size
 	uniform const int num_threads_i = 2;
 	uniform const int num_threads_j = 4;
-	uniform const int b_size = 64;
 	uniform const int i_interleaving = 64;
+	uniform const int b_size = 64;
 	for (uniform int i_block_start = 0; i_block_start < m; i_block_start += i_interleaving) {
 		// Save matrix in L3 cache
 		uniform int i_block_end = (i_block_start + i_interleaving < m ? i_block_start + i_interleaving : m); // final element in row of each block
