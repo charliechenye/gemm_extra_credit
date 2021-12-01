@@ -35,20 +35,11 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
     // A: m x n takes 1 x b_size
     // B: n x k takes b_size x b_size
     // C: m x k yields 1 x b_size
-	uniform const int num_threads_i = 2;
-	uniform const int num_threads_j = 4;
-	uniform const int i_interleaving = 64;
 	uniform const int b_size = 64;
-	for (uniform int i_block_start = 0; i_block_start < m; i_block_start += i_interleaving) {
-		// Save matrix in L3 cache
-		uniform int i_block_end = (i_block_start + i_interleaving < m ? i_block_start + i_interleaving : m); // final element in row of each block
+	uniform const int num_threads_i = m / b_size;
+	uniform const int num_threads_j = k / b_size;
+	launch[num_threads_i * num_threads_j] gemm_ispc_task(num_threads_i, num_threads_j,
+														m, n, k, A, B, C, alpha, beta, 
+														0, m, 0, k);
 
-		for (uniform int j_block_start = 0; j_block_start < n; j_block_start += b_size) {
-			uniform int j_block_end = (j_block_start + b_size < n? j_block_start + b_size : n);
-			
-			launch[num_threads_i * num_threads_j] gemm_ispc_task(num_threads_i, num_threads_j,
-																m, n, k, A, B, C, alpha, beta, 
-																i_block_start, i_block_end, j_block_start, j_block_end);
-		}
-	}
 }
