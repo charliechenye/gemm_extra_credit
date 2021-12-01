@@ -1,7 +1,7 @@
 task void gemm_ispc_task(
 	uniform const int num_threads_per_row, uniform const int col_per_thread,
 	uniform const int m, uniform const int n, uniform const int k,
-	uniform double A[], uniform double B[], uniform double C[], uniform double alpha, uniform double beta) 
+	uniform double A[], uniform double B[], uniform double C[], uniform double alpha) 
 {
 	// YOUR IMPLEMENTATION HERE
 	
@@ -24,7 +24,7 @@ task void gemm_ispc_task(
 
 task void initialization_task(
 	uniform const int m, unifrom const int k,
-	uniform double C[], uniform double alpha 
+	uniform double C[], uniform double beta 
 )
 {
 	// 1 task = 1 row
@@ -41,11 +41,11 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
     // B: n x k takes b_size x b_size
     // C: m x k yields 1 x b_size
 
-
+	launch[m] initialization_task(m, k, C, beta)
 	// 4 ALUS with 2 Hyper-threading
 	uniform const int num_threads_per_row = 8;
 	uniform const int b_size = (k + num_threads_per_row - 1) / num_threads_per_row;
 	launch[m * num_threads_per_row] gemm_ispc_task(num_threads_per_row, b_size,
-												m, n, k, A, B, C, alpha, beta);
+												m, n, k, A, B, C, alpha);
 
 }
