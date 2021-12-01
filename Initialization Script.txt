@@ -1,3 +1,6 @@
+# start bash
+bash
+
 # Go to folder
 cd ~/cs149/gemm_extra_credit/
 
