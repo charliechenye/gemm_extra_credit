@@ -35,10 +35,10 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
     // A: m x n takes 1 x b_size
     // B: n x k takes b_size x b_size
     // C: m x k yields 1 x b_size
-	uniform const int num_threads_i = 2;
-	uniform const int num_threads_j = 4;
-	uniform const int i_interleaving = 64;
-	uniform const int b_size = 64;
+	uniform const int num_threads_i = 16;
+	uniform const int num_threads_j = 16;
+	uniform const int i_interleaving = 512;
+	uniform const int b_size = 512;
 	for (uniform int i_block_start = 0; i_block_start < m; i_block_start += i_interleaving) {
 		// Save matrix in L3 cache
 		uniform int i_block_end = (i_block_start + i_interleaving < m ? i_block_start + i_interleaving : m); // final element in row of each block
