@@ -1,62 +1,58 @@
-task void gemm_ispc_task(
-	uniform const int num_threads_i, uniform const int num_threads_j, 
-	uniform const int m, uniform const int n, uniform const int k,
-	uniform double A[], uniform double B[], uniform double C[], uniform double alpha, uniform double beta, 
-	uniform const int i_block_start, uniform const int i_block_end, 
-	uniform const int j_block_start, uniform const int j_block_end) 
-{
+task void gemm_ispc_task( uniform int m, uniform int n, uniform int k,
+	uniform double A[], uniform double B[], uniform double C[], uniform double alpha,
+	 uniform double beta, uniform int iBlockStart, uniform int iBlockEnd,
+	 uniform int jBlockStart, uniform int jBlockEnd) {
 	// YOUR IMPLEMENTATION HERE
 
-	uniform const int thread_i = taskIndex / num_threads_j;
-	uniform const int thread_j = taskIndex % num_threads_j;
-	// 1 block is splited into num_threads_i x num_threads_j parts
-	uniform int i_thread_start = i_block_start + (i_block_end - i_block_start) / num_threads_i * thread_i;
-	uniform int i_thread_end = (thread_i < num_threads_i - 1 ? i_thread_start + (i_block_end - i_block_start) / num_threads_i : i_block_end);
-	uniform int j_thread_start = j_block_start + (j_block_end - j_block_start) / num_threads_j * thread_j;
-	uniform int j_thread_end = (thread_j < num_threads_j - 1 ? j_thread_start + (j_block_end - j_block_start) / num_threads_j : j_block_end);
+	// 1 block is splited into 8 parts executed by 8 threads (2 rows x 4 cols)
+	uniform int iStart = iBlockStart + (int)(taskIndex / 4) * (int)((iBlockEnd - iBlockStart)/2); // starting row of each part
+	uniform int iEnd = (iStart == iBlockStart? iBlockStart + (int)((iBlockEnd - iBlockStart)/2) : iBlockEnd); // final row of each part
+	uniform int jStart = jBlockStart + (int)((jBlockEnd - jBlockStart)/4) * (taskIndex % 4); // starting col of each part
+	uniform int jEnd = (taskIndex % 4 == 3? jBlockEnd : jStart + (int)((jBlockEnd - jBlockStart)/4)); // final col of each part
 
 	// SIMD with 4 ALUS
-	foreach (i = i_thread_start ... i_thread_end) {
-		for (uniform int j = j_thread_start; j < j_thread_end; j ++) {
-			double inner_product = 0.0;
-			for (uniform int kk = 0; kk < k; kk ++) {
-				inner_product += A[i * m + kk] * B[kk * n + j];
+	foreach (i = iStart ... iEnd){
+		for(uniform int j=jStart; j<jEnd; j++){
+			double inner_prod = 0;
+			for(uniform int kk=0; kk<k; kk++){
+				inner_prod += A[i*k+kk] * B[kk*n+j];
 			}
-			C[i * m + j] = alpha * inner_product + beta * C[i * m + j];
+			C[i*n+j] = alpha * inner_prod + beta * C[i*n+j];
 		}
 	}
 }
 
 export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 	 uniform double A[], uniform double B[], uniform double C[], uniform double alpha, 
-	 uniform double beta) 
-{
+	 uniform double beta) {
 	// YOUR IMPLEMENTATION HERE
-	uniform const int num_threads_i = 2;
-	uniform const int num_threads_j = 4;
-	uniform const int b_size = 64;
-	uniform const int i_interleaving = 64;
-	for (uniform int i_block_start = 0; i_block_start < m; i_block_start += i_interleaving) {
+	uniform int nBlock = m*m / 1000000 * 3 + 1;
+	for(uniform int iBlock = 0; iBlock < nBlock; iBlock++){
 		// Save matrix in L3 cache
-		uniform int i_block_end = (i_block_start + i_interleaving < m ? i_block_start + i_interleaving : m); // final element in row of each block
-		for (uniform int i = i_block_start; i < i_block_end; i++)
-			foreach (kk = 0 ... k)
-				prefetch_l3(&A[i * k + kk]);
+		uniform int iBlockStart = iBlock * (int) (m / nBlock); // starting element in row of each block
+		uniform int iBlockEnd = (iBlock < nBlock - 1? iBlockStart + (int) (m / nBlock) : m); // final element in row of each block
+		for(uniform int i = iBlockStart; i < iBlockEnd; i++){ 
+			foreach (kk = 0 ... k){ 
+				prefetch_l3(&A[i*k+kk]);
+			}
+		}
+		for(uniform int jBlock = 0; jBlock < nBlock; jBlock++){
+			uniform int jBlockStart = jBlock * (int) (m / nBlock); // starting element in column of each block
+			uniform int jBlockEnd = (jBlock < nBlock - 1? jBlockStart + (int) (m / nBlock) : m); // end element in column of each block
 
-		for (uniform int j_block_start = 0; j_block_start < n; j_block_start += b_size) {
-			uniform int j_block_end = (j_block_start + b_size < n? j_block_start + b_size : n);
-			
-			for (uniform int kk = 0; kk < k; kk ++)
-				foreach (j = j_block_start ... j_block_end)
-					prefetch_l3(&B[kk * n + j]);
+			for (uniform int kk = 0; kk < k; kk++){ 
+				foreach(j = jBlockStart ... jBlockEnd){
+					prefetch_l3(&B[kk*n+j]);
+				}
+			}
 
-			for (uniform int i = i_block_start; i < i_block_end; i++) 
-				foreach (j = j_block_start ... j_block_end)
-					prefetch_l3(&C[i * m+j]);
+			for (uniform int i = iBlockStart; i < iBlockEnd; i++){ 
+				foreach(j = jBlockStart ... jBlockEnd){ 
+					prefetch_l3(&C[i*m+j]);
+				}
+			}
 
-			launch[num_threads_i * num_threads_j] gemm_ispc_task(num_threads_i, num_threads_j,
-																m, n, k, A, B, C, alpha, beta, 
-																i_block_start, i_block_end, j_block_start, j_block_end);
+			launch[8] gemm_ispc_task(m, n, k, A, B, C, alpha, beta, iBlockStart, iBlockEnd, jBlockStart, jBlockEnd);
 		}
 	}
 }
