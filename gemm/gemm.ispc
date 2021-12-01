@@ -40,7 +40,7 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
     // B: n x k takes b_size x b_size
     // C: m x k yields 1 x b_size
 
-	launch[m] initialization_task(m, k, C, beta)
+	launch[m] initialization_task(m, k, C, beta);
 	// 4 ALUS with 2 Hyper-threading
 	uniform const int num_threads_per_row = 8;
 	uniform const int b_size = (k + num_threads_per_row - 1) / num_threads_per_row;
