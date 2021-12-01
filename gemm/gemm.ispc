@@ -23,9 +23,8 @@ task void gemm_ispc_task(
 }
 
 task void initialization_task(
-	uniform const int m, unifrom const int k,
-	uniform double C[], uniform double beta 
-)
+	uniform const int m, uniform const int k,
+	uniform double C[], uniform double beta)
 {
 	// 1 task = 1 row
 	foreach (kk = 0 ... k) 
