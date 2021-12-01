@@ -36,31 +36,45 @@ task void initialization_task(
 		C[taskIndex * m + kk] *= beta;
 }
 
+task void blocking_task(
+	uniform const int block_size, uniform const int l_count, uniform const int j_count,
+	uniform const int m, uniform const int n, uniform const int k,
+	uniform double A[], uniform double B[], uniform double C[], uniform double alpha, uniform double beta) 
+{
+	uniform const int l_offset = taskIndex / j_count * block_size;
+	uniform const int j_offset = taskIndex % j_count * block_size;
+	uniform const int j_max = (j_offset + block_size < k ? j_offset + block_size : k);
+	uniform const int l_max = (l_offset + block_size < n ? l_offset + block_size : n);
+	print("Taks ID: %, l range: % to %, j range: % to %\n", taskIndex, l_offset, l_max, j_offset, j_max);
+	
+	foreach (i = 0 ... m) {
+		for (int j = j_offset; j < j_max; j ++) {
+			double inner_product = 0.0;
+			for (int l = l_offset; l < l_max; l ++) {
+			    inner_product += A[i * m + l] * B[l * n + j];
+			}
+			print("Updated %", i * m + j);
+			C[i * m + j] += alpha * inner_product;
+		}
+	}
+}
+
 export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 	 uniform double A[], uniform double B[], uniform double C[], uniform double alpha, 
 	 uniform double beta) 
 {
     // YOUR IMPLEMENTATION HERE
-    // A: m x n takes 1 x b_size
+    // A: m x n takes m x b_size
     // B: n x k takes b_size x b_size
-    // C: m x k yields 1 x b_size
-	uniform const int num_threads_i = 16;
-	uniform const int num_threads_j = 16;
-	uniform const int i_interleaving = 512;
-	uniform const int b_size = 512;
+    // C: m x k yields m x b_size
 
 	launch[m] initialization_task(m, k, C, beta);
 
-	for (uniform int i_block_start = 0; i_block_start < m; i_block_start += i_interleaving) {
-		// Save matrix in L3 cache
-		uniform int i_block_end = (i_block_start + i_interleaving < m ? i_block_start + i_interleaving : m); // final element in row of each block
+	uniform const int b_size = 512;
+	uniform const int l_count = (n + b_size - 1) / b_size;
+	uniform const int j_count = (k + b_size - 1) / b_size;
 
-		for (uniform int j_block_start = 0; j_block_start < n; j_block_start += b_size) {
-			uniform int j_block_end = (j_block_start + b_size < n? j_block_start + b_size : n);
-			
-			launch[num_threads_i * num_threads_j] gemm_ispc_task(num_threads_i, num_threads_j,
-																m, n, k, A, B, C, alpha, beta, 
-																i_block_start, i_block_end, j_block_start, j_block_end);
-		}
-	}
+
+	// each thread takes a block
+	launch[l_count * j_count] blocking_task(b_size, l_count, j_count, m, n, k, A, B, C, alpha, beta);
 }
