@@ -65,13 +65,15 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 	 uniform double beta) 
 {
     // YOUR IMPLEMENTATION HERE
-    // A: m x n takes m x b_size
+    // A: m x n takes 1 x b_size
     // B: n x k takes b_size x b_size
-    // C: m x k yields m x b_size
+    // C: m x k yields 1 x b_size
 
 	launch[m] initialization_task(m, k, C, beta);
 
 	uniform int b_size = 512;
+
+	// reduce task count
 	while ((n + b_size - 1) / b_size * (k + b_size - 1) / b_size * m > 100000) {
 		b_size *= 2;
 	}
