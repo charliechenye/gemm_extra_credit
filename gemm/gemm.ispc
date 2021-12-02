@@ -42,7 +42,7 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
 
 	launch[m] initialization_task(m, k, C, beta);
 
-	uniform int b_size = 512;
+	uniform int b_size = 256;
 
 	// reduce task count
 	while ((n + b_size - 1) / b_size * (k + b_size - 1) / b_size * m > 100000) {
