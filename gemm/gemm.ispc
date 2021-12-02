@@ -17,7 +17,11 @@ task inline void blocking_task(
 				inner_product += A[i * m + l] * B[l * n + j];
 			}
 			// print("Updated %", i * m + j);
-			C[i * m + j] += alpha * inner_product;
+			/* given that need to loop through all i, j_offset before move to next block
+			 * unlikely to encounter collision. 
+			 * atomic add as preventive measures in case number of threads significantly increases
+			 */
+			atomic_add_local(&C[i * m + j], alpha * inner_product);
 		}
 	}
 }
@@ -31,17 +35,13 @@ export void gemm_ispc(uniform int m, uniform int n, uniform int k,
     // B: n x k takes b_size x b_size
     // C: m x k yields 1 x b_size
 
-	// launch[m] initialization_task(m, k, C, beta);
-	foreach(mi = 0 ... m, ki = 0 ... k){
-		C[mi*k+ki] *= beta;
+	// initialize C
+	foreach (i = 0 ... m, l = 0 ... k){
+		C[i * m + l] *= beta;
 	}
 
 	uniform int b_size = 512; 
 
-	// // reduce task count
-	// while ((n + b_size - 1) / b_size * (k + b_size - 1) / b_size * m > 100000) {
-	// 	b_size *= 2;
-	// }
 	uniform const int l_count = (n + b_size - 1) / b_size;
 	uniform const int j_count = (k + b_size - 1) / b_size;
 	uniform const int total_task_count = l_count * j_count * m;
