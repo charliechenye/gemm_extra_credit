@@ -1,32 +1,3 @@
-task void gemm_ispc_task(
-	uniform const int num_threads_i, uniform const int num_threads_j, 
-	uniform const int m, uniform const int n, uniform const int k,
-	uniform double A[], uniform double B[], uniform double C[], uniform double alpha, uniform double beta, 
-	uniform const int i_block_start, uniform const int i_block_end, 
-	uniform const int j_block_start, uniform const int j_block_end) 
-{
-	// YOUR IMPLEMENTATION HERE
-
-	uniform const int thread_i = taskIndex / num_threads_j;
-	uniform const int thread_j = taskIndex % num_threads_j;
-	// 1 block is splited into num_threads_i x num_threads_j parts
-	uniform int i_thread_start = i_block_start + (i_block_end - i_block_start) / num_threads_i * thread_i;
-	uniform int i_thread_end = (thread_i < num_threads_i - 1 ? i_thread_start + (i_block_end - i_block_start) / num_threads_i : i_block_end);
-	uniform int j_thread_start = j_block_start + (j_block_end - j_block_start) / num_threads_j * thread_j;
-	uniform int j_thread_end = (thread_j < num_threads_j - 1 ? j_thread_start + (j_block_end - j_block_start) / num_threads_j : j_block_end);
-
-	// SIMD with 4 ALUS
-	foreach (i = i_thread_start ... i_thread_end) {
-		for (int j = j_thread_start; j < j_thread_end; j ++) {
-			double inner_product = 0.0;
-			for (int kk = 0; kk < n; kk ++) {
-				inner_product += A[i * m + kk] * B[kk * n + j];
-			}
-			C[i * m + j] += alpha * inner_product;
-		}
-	}
-}
-
 task void initialization_task(
 	uniform const int m, uniform const int k,
 	uniform double C[], uniform double beta)
